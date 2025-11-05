@@ -1,0 +1,19 @@
+import type { Todo } from '../types/todo';
+import type { Prisma } from '@prisma/client';
+
+// PrismaのTodo型（データベースから取得）
+type PrismaTodo = Prisma.TodoGetPayload<{}>;
+
+/**
+ * PrismaのTodoをAPI用のTodoに変換
+ */
+export function prismaTodoToApiTodo(prismaTodo: PrismaTodo): Todo {
+  return {
+    id: prismaTodo.id,
+    text: prismaTodo.text,
+    completed: prismaTodo.completed,
+    createdAt: prismaTodo.createdAt.getTime(),
+    updatedAt: prismaTodo.updatedAt.getTime(),
+  };
+}
+

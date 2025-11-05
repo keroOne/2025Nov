@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { TodoProvider } from './contexts/TodoContext';
-import { TodoApp } from './components/TodoApp';
+// テスト用: RestApiAdapterをテスト
+import { TestRestApi } from './test-rest-api';
 import './style.css';
 
 // エラーハンドリングとログ出力
@@ -18,13 +18,14 @@ try {
   const root = ReactDOM.createRoot(appElement);
   console.log('React root created');
 
+  // テストモード: RestApiAdapterのgetAllTodosをテスト
   root.render(
-    <TodoProvider>
-      <TodoApp />
-    </TodoProvider>
+    <React.StrictMode>
+      <TestRestApi />
+    </React.StrictMode>
   );
 
-  console.log('React app rendered');
+  console.log('React app rendered (Test mode: RestApiAdapter)');
 } catch (error) {
   console.error('Failed to render React app:', error);
   appElement.innerHTML = `

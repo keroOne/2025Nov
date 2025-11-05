@@ -1,0 +1,11 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "exec": "node --loader ts-node/esm --experimental-specifier-resolution=node src/server.ts",
+  "env": {
+    "DATABASE_URL": "file:./prisma/dev.db",
+    "PORT": "3001",
+    "NODE_ENV": "development"
+  }
+}
+
