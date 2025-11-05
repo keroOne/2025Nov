@@ -6,6 +6,11 @@ export const TodoForm: React.FC = () => {
   const { addTodo } = useTodo();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setText(newValue);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || isSubmitting) return;
@@ -27,10 +32,12 @@ export const TodoForm: React.FC = () => {
       <input
         type="text"
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={handleChange}
         placeholder="新しいTodoを入力..."
         className="todo-input"
         disabled={isSubmitting}
+        autoComplete="off"
+        key="todo-input"
       />
       <button 
         type="submit" 

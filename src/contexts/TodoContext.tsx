@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 import type { Todo, TodoFilter } from '../types/todo';
 import type { IStorage } from '../storage/IStorage';
-import { LocalStorageAdapter } from '../storage/LocalStorageAdapter';
+import { MemoryStorageAdapter } from '../storage/MemoryStorageAdapter';
 
 interface TodoContextType {
   todos: Todo[];
@@ -24,26 +24,10 @@ interface TodoProviderProps {
 
 export const TodoProvider: React.FC<TodoProviderProps> = ({ 
   children, 
-  storage = new LocalStorageAdapter() 
+  storage = new MemoryStorageAdapter() 
 }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<TodoFilter>('all');
-  const [loading, setLoading] = useState(true);
-
-  // 初期データの読み込み
-  useEffect(() => {
-    const loadTodos = async () => {
-      try {
-        const loadedTodos = await storage.getAllTodos();
-        setTodos(loadedTodos);
-      } catch (error) {
-        console.error('Failed to load todos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTodos();
-  }, [storage]);
 
   // フィルタリングされたTodoリスト
   const filteredTodos = todos.filter(todo => {
@@ -136,7 +120,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
         clearCompleted,
       }}
     >
-      {loading ? <div className="todo-loading">読み込み中...</div> : children}
+      {children}
     </TodoContext.Provider>
   );
 };
