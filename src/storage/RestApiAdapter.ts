@@ -57,7 +57,11 @@ export class RestApiAdapter implements IStorage {
     try {
       const todo = await this.request<Todo>(`/todos/${id}`);
       return todo || null;
-    } catch (error) {
+    } catch (error: any) {
+      // 404エラーの場合はnullを返す
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        return null;
+      }
       console.error(`Failed to get todo ${id}:`, error);
       throw error;
     }
@@ -68,23 +72,27 @@ export class RestApiAdapter implements IStorage {
    */
   async saveTodo(todo: Todo): Promise<void> {
     try {
-      const isNew = !todo.id;
-      
-      if (isNew) {
-        // 新規作成
-        await this.request<Todo>('/todos', {
+      // 新規作成の場合（idがない、または空文字列）
+      if (!todo.id || todo.id.trim() === '') {
+        const createdTodo = await this.request<Todo>('/todos', {
           method: 'POST',
           body: JSON.stringify({ text: todo.text }),
         });
+        // 作成されたTodoのIDを元のTodoオブジェクトに反映
+        todo.id = createdTodo.id;
+        todo.createdAt = createdTodo.createdAt;
+        todo.updatedAt = createdTodo.updatedAt;
       } else {
         // 更新
-        await this.request<Todo>(`/todos/${todo.id}`, {
+        const updatedTodo = await this.request<Todo>(`/todos/${todo.id}`, {
           method: 'PUT',
           body: JSON.stringify({
             text: todo.text,
             completed: todo.completed,
           }),
         });
+        // 更新されたTodoの情報を反映
+        todo.updatedAt = updatedTodo.updatedAt;
       }
     } catch (error) {
       console.error('Failed to save todo:', error);
