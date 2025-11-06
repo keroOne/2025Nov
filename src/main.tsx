@@ -1,5 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { FluentProvider, webLightTheme } from '@fluentui/react-components';
+import { CategoryProvider, useCategory } from './contexts/CategoryContext';
 import { TodoProvider } from './contexts/TodoContext';
 import { TodoApp } from './components/TodoApp';
 import './style.css';
@@ -14,15 +16,27 @@ if (!appElement) {
 console.log('React app starting...');
 console.log('Root element found:', appElement);
 
+// CategoryProvider内でTodoProviderを使用するコンポーネント
+const CategoryTodoApp: React.FC = () => {
+  const { selectedCategoryId } = useCategory();
+  return (
+    <TodoProvider selectedCategoryId={selectedCategoryId}>
+      <TodoApp />
+    </TodoProvider>
+  );
+};
+
 try {
   const root = ReactDOM.createRoot(appElement);
   console.log('React root created');
 
   root.render(
     <React.StrictMode>
-      <TodoProvider>
-        <TodoApp />
-      </TodoProvider>
+      <FluentProvider theme={webLightTheme}>
+        <CategoryProvider>
+          <CategoryTodoApp />
+        </CategoryProvider>
+      </FluentProvider>
     </React.StrictMode>
   );
 
@@ -37,4 +51,3 @@ try {
     </div>
   `;
 }
-

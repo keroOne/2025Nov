@@ -1,33 +1,17 @@
 import type { Todo } from '../types/todo';
+import type { Category, CategoryWithChildren } from '../types/category';
 
-/**
- * ストレージ層の抽象インターフェース
- * ブラウザストレージとRDBの両方で実装可能
- */
 export interface IStorage {
-  /**
-   * 全てのTodoを取得
-   */
-  getAllTodos(): Promise<Todo[]>;
-
-  /**
-   * 指定されたIDのTodoを取得
-   */
+  // Todo操作
+  getAllTodos(categoryId?: string): Promise<Todo[]>;
   getTodoById(id: string): Promise<Todo | null>;
-
-  /**
-   * Todoを保存（新規作成または更新）
-   */
   saveTodo(todo: Todo): Promise<void>;
-
-  /**
-   * Todoを削除
-   */
   deleteTodo(id: string): Promise<void>;
-
-  /**
-   * 全てのTodoを削除
-   */
   deleteAllTodos(): Promise<void>;
+  
+  // Category操作
+  getAllCategories(): Promise<CategoryWithChildren[]>;
+  getCategoryById(id: string): Promise<Category | null>;
+  saveCategory(category: Category): Promise<void>;
+  deleteCategory(id: string): Promise<void>;
 }
-

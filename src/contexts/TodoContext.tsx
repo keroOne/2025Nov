@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import type { Todo, TodoFilter } from '../types/todo';
 import type { IStorage } from '../storage/IStorage';
 import { RestApiAdapter } from '../storage/RestApiAdapter';
@@ -7,43 +7,54 @@ interface TodoContextType {
   todos: Todo[];
   filter: TodoFilter;
   filteredTodos: Todo[];
-  addTodo: (text: string) => Promise<void>;
+  selectedCategoryId: string | null;
+  addTodo: (categoryId: string, title: string, content: string) => Promise<void>;
   updateTodo: (id: string, updates: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
   setFilter: (filter: TodoFilter) => void;
   clearCompleted: () => Promise<void>;
+  refreshTodos: (categoryId?: string | null) => Promise<void>;
+  loading: boolean;
 }
 
 const TodoContext = createContext<TodoContextType | undefined>(undefined);
 
 interface TodoProviderProps {
   children: ReactNode;
-  storage?: IStorage; // テストや将来的なRDB移行のために注入可能に
+  storage?: IStorage;
+  selectedCategoryId?: string | null;
 }
 
 export const TodoProvider: React.FC<TodoProviderProps> = ({ 
   children, 
-  storage = new RestApiAdapter() 
+  storage: externalStorage,
+  selectedCategoryId: externalSelectedCategoryId = null,
 }) => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filter, setFilter] = useState<TodoFilter>('all');
   const [loading, setLoading] = useState(true);
+  const selectedCategoryId = externalSelectedCategoryId;
+
+  // storageをメモ化して、毎回新しいインスタンスが作成されないようにする
+  const storage = useMemo(() => externalStorage || new RestApiAdapter(), [externalStorage]);
+
+  const refreshTodos = useCallback(async (categoryId?: string | null) => {
+    try {
+      setLoading(true);
+      const loadedTodos = await storage.getAllTodos(categoryId || undefined);
+      setTodos(loadedTodos);
+    } catch (error) {
+      console.error('Failed to load todos:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [storage]);
 
   // 初期データの読み込み
   useEffect(() => {
-    const loadTodos = async () => {
-      try {
-        const loadedTodos = await storage.getAllTodos();
-        setTodos(loadedTodos);
-      } catch (error) {
-        console.error('Failed to load todos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTodos();
-  }, [storage]);
+    refreshTodos(selectedCategoryId);
+  }, [refreshTodos, selectedCategoryId]);
 
   // フィルタリングされたTodoリスト
   const filteredTodos = todos.filter(todo => {
@@ -53,24 +64,29 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
   });
 
   // Todoを追加
-  const addTodo = async (text: string) => {
+  const addTodo = useCallback(async (categoryId: string, title: string, content: string) => {
+    console.log('addTodo called:', { categoryId, title, content });
     const newTodo: Todo = {
-      id: '', // RestApiAdapterがサーバーからIDを取得する
-      text: text.trim(),
+      id: '',
+      categoryId,
+      title: title.trim(),
+      content: content.trim(),
       completed: false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
 
     try {
+      console.log('Saving todo:', newTodo);
       await storage.saveTodo(newTodo);
-      // saveTodoでIDが設定されるので、それを反映
-      setTodos(prev => [...prev, newTodo]);
+      console.log('Todo saved, refreshing...');
+      await refreshTodos(selectedCategoryId);
+      console.log('Todos refreshed');
     } catch (error) {
       console.error('Failed to add todo:', error);
       throw error;
     }
-  };
+  }, [storage, refreshTodos, selectedCategoryId]);
 
   // Todoを更新
   const updateTodo = async (id: string, updates: Partial<Todo>) => {
@@ -85,7 +101,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
       };
 
       await storage.saveTodo(updatedTodo);
-      setTodos(prev => prev.map(t => (t.id === id ? updatedTodo : t)));
+      await refreshTodos(selectedCategoryId);
     } catch (error) {
       console.error('Failed to update todo:', error);
       throw error;
@@ -96,7 +112,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
   const deleteTodo = async (id: string) => {
     try {
       await storage.deleteTodo(id);
-      setTodos(prev => prev.filter(t => t.id !== id));
+      await refreshTodos(selectedCategoryId);
     } catch (error) {
       console.error('Failed to delete todo:', error);
       throw error;
@@ -116,7 +132,7 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
     try {
       const completedIds = todos.filter(t => t.completed).map(t => t.id);
       await Promise.all(completedIds.map(id => storage.deleteTodo(id)));
-      setTodos(prev => prev.filter(t => !t.completed));
+      await refreshTodos(selectedCategoryId);
     } catch (error) {
       console.error('Failed to clear completed todos:', error);
       throw error;
@@ -129,12 +145,15 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
         todos,
         filter,
         filteredTodos,
+        selectedCategoryId,
         addTodo,
         updateTodo,
         deleteTodo,
         toggleTodo,
         setFilter,
         clearCompleted,
+        refreshTodos,
+        loading,
       }}
     >
       {children}
@@ -149,4 +168,3 @@ export const useTodo = (): TodoContextType => {
   }
   return context;
 };
-

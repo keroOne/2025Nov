@@ -2,6 +2,7 @@ import express from 'express';
 import { corsMiddleware } from './middleware/cors.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import todosRouter from './routes/todos.js';
+import categoriesRouter from './routes/categories.js';
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/todos', todosRouter);
+app.use('/api/categories', categoriesRouter);
 
 // エラーハンドリング
 app.use(errorHandler);

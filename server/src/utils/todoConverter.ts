@@ -1,4 +1,4 @@
-import type { Todo } from '../types/todo';
+import type { Todo } from '../types/todo.js';
 import type { Prisma } from '@prisma/client';
 
 // PrismaのTodo型（データベースから取得）
@@ -10,10 +10,11 @@ type PrismaTodo = Prisma.TodoGetPayload<{}>;
 export function prismaTodoToApiTodo(prismaTodo: PrismaTodo): Todo {
   return {
     id: prismaTodo.id,
-    text: prismaTodo.text,
+    categoryId: prismaTodo.categoryId,
+    title: prismaTodo.title,
+    content: prismaTodo.content,
     completed: prismaTodo.completed,
     createdAt: prismaTodo.createdAt.getTime(),
     updatedAt: prismaTodo.updatedAt.getTime(),
   };
 }
-

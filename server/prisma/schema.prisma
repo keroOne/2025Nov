@@ -10,12 +10,28 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Category {
+  id        String     @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Category[] @relation("CategoryHierarchy")
+  todos     Todo[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@map("categories")
+}
+
 model Todo {
-  id        String   @id @default(uuid())
-  text      String
-  completed Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String    @id @default(uuid())
+  categoryId String
+  category   Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  title      String
+  content    String
+  completed  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   
   @@map("todos")
 }

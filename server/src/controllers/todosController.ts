@@ -8,7 +8,15 @@ import type { CreateTodoRequest, UpdateTodoRequest } from '../types/todo.js';
  */
 export async function getAllTodos(req: Request, res: Response) {
   try {
+    const { categoryId } = req.query;
+    
+    const where: { categoryId?: string } = {};
+    if (categoryId && typeof categoryId === 'string') {
+      where.categoryId = categoryId;
+    }
+    
     const todos = await prisma.todo.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
     });
     
@@ -47,17 +55,35 @@ export async function getTodoById(req: Request, res: Response) {
  */
 export async function createTodo(req: Request, res: Response) {
   try {
-    const { text } = req.body as CreateTodoRequest;
+    const { categoryId, title, content } = req.body as CreateTodoRequest;
     
-    if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    if (!categoryId || typeof categoryId !== 'string') {
       return res.status(400).json({
-        error: { message: 'Text is required and must be a non-empty string' },
+        error: { message: 'CategoryId is required' },
+      });
+    }
+    
+    if (!title || typeof title !== 'string' || title.trim().length === 0) {
+      return res.status(400).json({
+        error: { message: 'Title is required and must be a non-empty string' },
+      });
+    }
+    
+    // カテゴリの存在確認
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+    if (!category) {
+      return res.status(400).json({
+        error: { message: 'Category not found' },
       });
     }
     
     const todo = await prisma.todo.create({
       data: {
-        text: text.trim(),
+        categoryId,
+        title: title.trim(),
+        content: (content || '').trim(),
         completed: false,
       },
     });
@@ -75,17 +101,44 @@ export async function createTodo(req: Request, res: Response) {
 export async function updateTodo(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { text, completed } = req.body as UpdateTodoRequest;
+    const { categoryId, title, content, completed } = req.body as UpdateTodoRequest;
     
-    const updateData: { text?: string; completed?: boolean } = {};
+    const updateData: { categoryId?: string; title?: string; content?: string; completed?: boolean } = {};
     
-    if (text !== undefined) {
-      if (typeof text !== 'string' || text.trim().length === 0) {
+    if (categoryId !== undefined) {
+      if (typeof categoryId !== 'string') {
         return res.status(400).json({
-          error: { message: 'Text must be a non-empty string' },
+          error: { message: 'CategoryId must be a string' },
         });
       }
-      updateData.text = text.trim();
+      // カテゴリの存在確認
+      const category = await prisma.category.findUnique({
+        where: { id: categoryId },
+      });
+      if (!category) {
+        return res.status(400).json({
+          error: { message: 'Category not found' },
+        });
+      }
+      updateData.categoryId = categoryId;
+    }
+    
+    if (title !== undefined) {
+      if (typeof title !== 'string' || title.trim().length === 0) {
+        return res.status(400).json({
+          error: { message: 'Title must be a non-empty string' },
+        });
+      }
+      updateData.title = title.trim();
+    }
+    
+    if (content !== undefined) {
+      if (typeof content !== 'string') {
+        return res.status(400).json({
+          error: { message: 'Content must be a string' },
+        });
+      }
+      updateData.content = content.trim();
     }
     
     if (completed !== undefined) {
