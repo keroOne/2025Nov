@@ -10,14 +10,27 @@ interface TodoListViewProps {
   selectedTodoId: string | null;
 }
 
+// カテゴリをIDで検索（階層構造内）
+const findCategoryById = (
+  cats: Array<{ id: string; name: string; children: any[] }>,
+  id: string
+): any => {
+  for (const cat of cats) {
+    if (cat.id === id) return cat;
+    const found = findCategoryById(cat.children, id);
+    if (found) return found;
+  }
+  return null;
+};
+
 export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, selectedTodoId }) => {
   const { todos, filteredTodos, addTodo, updateTodo, deleteTodo, toggleTodo, selectedCategoryId } = useTodo();
-  const { categories } = useCategory();
+  const { categories, loading: categoriesLoading } = useCategory();
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
 
-  const selectedCategory = selectedCategoryId
+  const selectedCategory = selectedCategoryId && categories.length > 0
     ? findCategoryById(categories, selectedCategoryId)
     : null;
 
@@ -60,17 +73,14 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
     }
   };
 
-  const findCategoryById = (
-    cats: typeof categories,
-    id: string
-  ): typeof categories[0] | null => {
-    for (const cat of cats) {
-      if (cat.id === id) return cat;
-      const found = findCategoryById(cat.children, id);
-      if (found) return found;
-    }
-    return null;
-  };
+  if (categoriesLoading) {
+    return (
+      <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c' }}>
+        <Spinner size="medium" />
+        <Body1>読み込み中...</Body1>
+      </div>
+    );
+  }
 
   if (!selectedCategoryId) {
     return (
