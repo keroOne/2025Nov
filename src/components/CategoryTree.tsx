@@ -57,14 +57,25 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ category, level }) 
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          padding: '4px 8px',
+          gap: '4px',
+          padding: '8px 12px',
           backgroundColor: isSelected ? '#e1f5fe' : 'transparent',
           cursor: 'pointer',
+          marginLeft: `${level * 20}px`,
           borderRadius: '4px',
-          marginLeft: `${level * 16}px`,
+          transition: 'background-color 0.15s ease',
         }}
         onClick={handleSelect}
+        onMouseEnter={(e) => {
+          if (!isSelected) {
+            e.currentTarget.style.backgroundColor = '#f3f2f1';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!isSelected) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }
+        }}
       >
         {hasChildren ? (
           <Button
@@ -75,12 +86,22 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ category, level }) 
               setIsExpanded(!isExpanded);
             }}
             size="small"
+            style={{ minWidth: '24px', padding: '4px' }}
           />
         ) : (
           <div style={{ width: '24px' }} />
         )}
-        <span style={{ flex: 1 }}>{category.name}</span>
-        <div style={{ display: 'flex', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
+        <span
+          style={{
+            flex: 1,
+            fontSize: '14px',
+            fontWeight: isSelected ? '600' : '400',
+            color: isSelected ? '#0078d4' : '#323130',
+          }}
+        >
+          {category.name}
+        </span>
+        <div style={{ display: 'flex', gap: '2px', opacity: 0 }} onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }} onClick={(e) => e.stopPropagation()}>
           <Button
             appearance="subtle"
             icon={<AddRegular />}
@@ -90,6 +111,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ category, level }) 
             }}
             size="small"
             title="サブカテゴリを追加"
+            style={{ minWidth: '28px', padding: '4px' }}
           />
           <Button
             appearance="subtle"
@@ -100,11 +122,12 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ category, level }) 
             }}
             size="small"
             title="削除"
+            style={{ minWidth: '28px', padding: '4px' }}
           />
         </div>
       </div>
       {isAdding && (
-        <div style={{ paddingLeft: `${(level + 1) * 16 + 24}px`, marginTop: '4px', marginBottom: '4px' }}>
+        <div style={{ paddingLeft: `${(level + 1) * 20 + 24}px`, marginTop: '4px', marginBottom: '4px' }}>
           <Input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -119,6 +142,7 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ category, level }) 
             }}
             autoFocus
             size="small"
+            style={{ fontSize: '13px' }}
           />
         </div>
       )}
@@ -154,14 +178,15 @@ export const CategoryTree: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>カテゴリ</h3>
+        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#323130' }}>カテゴリ</h3>
         <Button
           appearance="primary"
           icon={<AddRegular />}
           onClick={() => setIsAddingRoot(true)}
           size="small"
+          style={{ minWidth: 'auto' }}
         >
           追加
         </Button>
@@ -182,12 +207,13 @@ export const CategoryTree: React.FC = () => {
             }}
             autoFocus
             size="small"
+            style={{ fontSize: '13px' }}
           />
         </div>
       )}
       <div style={{ flex: 1, overflow: 'auto' }}>
         {categories.length === 0 ? (
-          <div style={{ padding: '16px', textAlign: 'center', color: '#605e5c' }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c', fontSize: '14px' }}>
             カテゴリがありません
           </div>
         ) : (
