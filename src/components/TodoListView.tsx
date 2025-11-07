@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Card, Button, Checkbox, Input, Body1, Spinner, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem } from '@fluentui/react-components';
-import { AddRegular, DeleteRegular, DocumentRegular, DocumentTextRegular } from '@fluentui/react-icons';
+import { Card, Button, Checkbox, Body1, Spinner, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem } from '@fluentui/react-components';
+import { AddRegular, DeleteRegular, DocumentRegular, DocumentTextRegular, EditRegular, EyeRegular } from '@fluentui/react-icons';
 import { useTodo } from '../contexts/TodoContext';
 import { useCategory } from '../contexts/CategoryContext';
+import { TodoDialog } from './TodoDialog';
 import type { Todo } from '../types/todo';
 
 interface TodoListViewProps {
@@ -26,47 +27,60 @@ const findCategoryById = (
 export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, selectedTodoId }) => {
   const { filteredTodos, addTodo, deleteTodo, toggleTodo, selectedCategoryId } = useTodo();
   const { categories, loading: categoriesLoading } = useCategory();
-  const [isAdding, setIsAdding] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newContent, setNewContent] = useState('');
+  const [dialogMode, setDialogMode] = useState<'view' | 'add' | 'edit' | 'preview' | null>(null);
+  const [dialogTodoId, setDialogTodoId] = useState<string | null>(null);
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [contextMenuTodoId, setContextMenuTodoId] = useState<string | null>(null);
 
   const selectedCategory = selectedCategoryId && categories.length > 0
     ? findCategoryById(categories, selectedCategoryId)
     : null;
 
-  const handleAdd = async () => {
-    console.log('handleAdd called:', { newTitle, newContent, selectedCategoryId });
-    if (!newTitle.trim()) {
-      console.log('Title is empty');
-      alert('タイトルを入力してください');
-      return;
-    }
+  // ダイアログを閉じる
+  const handleCloseDialog = () => {
+    setDialogMode(null);
+    setDialogTodoId(null);
+  };
+
+  // 追加処理
+  const handleAdd = async (title: string, content: string) => {
     if (!selectedCategoryId) {
-      console.log('No category selected');
       alert('カテゴリを選択してください');
       return;
     }
     try {
-      console.log('Calling addTodo...');
-      await addTodo(selectedCategoryId, newTitle.trim(), newContent.trim());
-      console.log('addTodo completed');
-      setNewTitle('');
-      setNewContent('');
-      setIsAdding(false);
+      await addTodo(selectedCategoryId, title, content);
     } catch (error) {
       console.error('Failed to add todo:', error);
-      alert('Todoの追加に失敗しました: ' + (error instanceof Error ? error.message : String(error)));
+      throw error;
     }
   };
 
-  const handleDelete = async (id: string) => {
+  // 表示ダイアログを開く
+  const handleView = (todoId: string) => {
+    setDialogTodoId(todoId);
+    setDialogMode('view');
+    onSelectTodo(filteredTodos.find(t => t.id === todoId) || null);
+  };
+
+  // 編集ダイアログを開く
+  const handleEdit = (todoId: string) => {
+    setDialogTodoId(todoId);
+    setDialogMode('edit');
+    onSelectTodo(filteredTodos.find(t => t.id === todoId) || null);
+  };
+
+  // 削除処理
+  const handleDelete = async (todoId: string) => {
     if (window.confirm('このTodoを削除しますか？')) {
       try {
-        await deleteTodo(id);
-        if (selectedTodoId === id) {
+        await deleteTodo(todoId);
+        if (selectedTodoId === todoId) {
           onSelectTodo(null);
+        }
+        if (dialogTodoId === todoId) {
+          handleCloseDialog();
         }
       } catch (error) {
         console.error('Failed to delete todo:', error);
@@ -75,17 +89,38 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
+  // コンテキストメニュー（空の場所）
+  const handleContextMenuEmpty = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!selectedCategoryId) return;
+    setContextMenuTodoId(null);
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
     setContextMenuOpen(true);
   };
 
-  const handleAddFromMenu = () => {
-    setContextMenuOpen(false);
-    setIsAdding(true);
+  // コンテキストメニュー（Todoアイテム上）
+  const handleContextMenuTodo = (e: React.MouseEvent, todoId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenuTodoId(todoId);
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuOpen(true);
+  };
+
+  // ダブルクリック
+  const handleDoubleClick = (todoId: string) => {
+    handleView(todoId);
+  };
+
+  // ダイアログで前後のTodoに移動したときの処理
+  const handleTodoChange = (todoId: string | null) => {
+    if (todoId) {
+      const todo = filteredTodos.find(t => t.id === todoId);
+      if (todo) {
+        onSelectTodo(todo);
+      }
+    }
   };
 
   if (categoriesLoading) {
@@ -109,18 +144,21 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
     <div style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
       <div
         style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-        onContextMenu={handleContextMenu}
+        onContextMenu={handleContextMenuEmpty}
       >
         <h3 
           style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#323130', cursor: 'context-menu' }}
-          onContextMenu={handleContextMenu}
+          onContextMenu={handleContextMenuEmpty}
         >
           {selectedCategory?.name || 'Todo'}
         </h3>
         <Button
           appearance="primary"
           icon={<AddRegular />}
-          onClick={() => setIsAdding(true)}
+          onClick={() => {
+            setDialogMode('add');
+            setDialogTodoId(null);
+          }}
           size="small"
           style={{ minWidth: 'auto' }}
         >
@@ -128,7 +166,13 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
         </Button>
       </div>
       {contextMenuOpen && contextMenuPosition && (
-        <Menu open={contextMenuOpen} onOpenChange={(_, data) => setContextMenuOpen(data.open)}>
+        <Menu open={contextMenuOpen} onOpenChange={(_, data) => {
+          if (!data.open) {
+            setContextMenuOpen(false);
+            setContextMenuPosition(null);
+            setContextMenuTodoId(null);
+          }
+        }}>
           <MenuTrigger disableButtonEnhancement>
             <div 
               style={{ 
@@ -144,61 +188,66 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
-              <MenuItem
-                icon={<DocumentRegular />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddFromMenu();
-                }}
-              >
-                追加...
-              </MenuItem>
+              {contextMenuTodoId ? (
+                // Todoアイテム上でのコンテキストメニュー
+                <>
+                  <MenuItem
+                    icon={<EyeRegular />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setContextMenuOpen(false);
+                      handleView(contextMenuTodoId);
+                    }}
+                  >
+                    表示...
+                  </MenuItem>
+                  <MenuItem
+                    icon={<EditRegular />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setContextMenuOpen(false);
+                      handleEdit(contextMenuTodoId);
+                    }}
+                  >
+                    編集...
+                  </MenuItem>
+                  <MenuItem
+                    icon={<DeleteRegular />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setContextMenuOpen(false);
+                      handleDelete(contextMenuTodoId);
+                    }}
+                  >
+                    削除...
+                  </MenuItem>
+                </>
+              ) : (
+                // 空の場所でのコンテキストメニュー
+                <MenuItem
+                  icon={<DocumentRegular />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setContextMenuOpen(false);
+                    setDialogMode('add');
+                    setDialogTodoId(null);
+                  }}
+                >
+                  追加...
+                </MenuItem>
+              )}
             </MenuList>
           </MenuPopover>
         </Menu>
       )}
-      {isAdding && (
-        <Card style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#faf9f8', border: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <Input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder="タイトル"
-              autoFocus
-              size="medium"
-            />
-            <Input
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              placeholder="内容"
-              size="medium"
-            />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-              <Button onClick={handleAdd} appearance="primary" size="small">
-                追加
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsAdding(false);
-                  setNewTitle('');
-                  setNewContent('');
-                }}
-                size="small"
-              >
-                キャンセル
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
       <div 
         style={{ flex: 1, overflow: 'auto' }}
-        onContextMenu={handleContextMenu}
+        onContextMenu={handleContextMenuEmpty}
       >
         {filteredTodos.length === 0 ? (
           <div 
             style={{ padding: '24px', textAlign: 'center', color: '#605e5c', fontSize: '14px', minHeight: '200px' }}
-            onContextMenu={handleContextMenu}
+            onContextMenu={handleContextMenuEmpty}
           >
             Todoがありません
           </div>
@@ -217,6 +266,8 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
                   transition: 'all 0.15s ease',
                 }}
                 onClick={() => onSelectTodo(todo)}
+                onDoubleClick={() => handleDoubleClick(todo.id)}
+                onContextMenu={(e) => handleContextMenuTodo(e, todo.id)}
                 onMouseEnter={(e) => {
                   if (selectedTodoId !== todo.id) {
                     e.currentTarget.style.backgroundColor = '#faf9f8';
@@ -276,6 +327,26 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
           </div>
         )}
       </div>
+      <TodoDialog
+        mode={dialogMode}
+        todoId={dialogTodoId}
+        onClose={handleCloseDialog}
+        onModeChange={(mode) => {
+          setDialogMode(mode);
+        }}
+        onTodoChange={handleTodoChange}
+        onAdd={handleAdd}
+        onEdit={() => {
+          if (dialogTodoId) {
+            handleEdit(dialogTodoId);
+          }
+        }}
+        onDelete={() => {
+          if (dialogTodoId) {
+            handleDelete(dialogTodoId);
+          }
+        }}
+      />
     </div>
   );
 };

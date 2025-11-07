@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { ResizablePane } from './ResizablePane';
 import { CategoryTree } from './CategoryTree';
 import { TodoListView } from './TodoListView';
-import { TodoDetailView } from './TodoDetailView';
-import { ErrorBoundary } from './ErrorBoundary';
 import type { Todo } from '../types/todo';
 
 export const TodoApp: React.FC = () => {
@@ -14,22 +12,9 @@ export const TodoApp: React.FC = () => {
       <ResizablePane
         left={<CategoryTree />}
         right={
-          <ResizablePane
-            direction="vertical"
-            left={
-              <TodoListView
-                onSelectTodo={setSelectedTodo}
-                selectedTodoId={selectedTodo?.id || null}
-              />
-            }
-            right={
-              <ErrorBoundary>
-                <TodoDetailView todo={selectedTodo} />
-              </ErrorBoundary>
-            }
-            defaultSize={400}
-            minSize={200}
-            cookieKey="todo-pane-vertical-size"
+          <TodoListView
+            onSelectTodo={setSelectedTodo}
+            selectedTodoId={selectedTodo?.id || null}
           />
         }
         direction="horizontal"
