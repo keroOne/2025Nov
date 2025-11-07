@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogSurface, DialogTitle, DialogBody, DialogActions, DialogContent, Button, Input, Checkbox, Body1 } from '@fluentui/react-components';
 import { ChevronLeftRegular, ChevronRightRegular, EditRegular, DeleteRegular, SaveRegular, EyeRegular } from '@fluentui/react-icons';
 import { useTodo } from '../contexts/TodoContext';
-import { LexicalEditor } from './LexicalEditor';
+import { TinyMCEEditor } from './TinyMCEEditor';
 
 interface TodoDialogProps {
   mode: 'view' | 'add' | 'edit' | 'preview' | null;
@@ -257,7 +257,7 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                 />
                 <div>
                   <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>内容</Body1>
-                  <LexicalEditor
+                  <TinyMCEEditor
                     value={content}
                     onChange={setContent}
                     placeholder="内容を入力..."
