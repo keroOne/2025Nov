@@ -1,5 +1,4 @@
 // テスト用：最小限のコンポーネントで動作確認
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './style.css';
 

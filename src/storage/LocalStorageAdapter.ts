@@ -1,4 +1,5 @@
 import type { Todo } from '../types/todo';
+import type { Category, CategoryWithChildren } from '../types/category';
 import type { IStorage } from './IStorage';
 
 const STORAGE_KEY = 'todos';
@@ -57,6 +58,23 @@ export class LocalStorageAdapter implements IStorage {
 
   async deleteAllTodos(): Promise<void> {
     this.saveTodosToStorage([]);
+  }
+
+  // Category operations (not implemented for LocalStorage)
+  async getAllCategories(): Promise<CategoryWithChildren[]> {
+    return [];
+  }
+
+  async getCategoryById(_id: string): Promise<Category | null> {
+    return null;
+  }
+
+  async saveCategory(_category: Category): Promise<void> {
+    // Not implemented
+  }
+
+  async deleteCategory(_id: string): Promise<void> {
+    // Not implemented
   }
 }
 

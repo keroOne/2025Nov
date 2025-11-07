@@ -1,4 +1,5 @@
 import type { Todo } from '../types/todo';
+import type { Category, CategoryWithChildren } from '../types/category';
 import type { IStorage } from './IStorage';
 
 /**
@@ -32,6 +33,23 @@ export class MemoryStorageAdapter implements IStorage {
 
   async deleteAllTodos(): Promise<void> {
     this.todos = [];
+  }
+
+  // Category operations (not implemented for MemoryStorage)
+  async getAllCategories(): Promise<CategoryWithChildren[]> {
+    return [];
+  }
+
+  async getCategoryById(_id: string): Promise<Category | null> {
+    return null;
+  }
+
+  async saveCategory(_category: Category): Promise<void> {
+    // Not implemented
+  }
+
+  async deleteCategory(_id: string): Promise<void> {
+    // Not implemented
   }
 }
 

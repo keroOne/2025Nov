@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import type { Category, CategoryWithChildren } from '../types/category';
 import type { IStorage } from '../storage/IStorage';
 import { RestApiAdapter } from '../storage/RestApiAdapter';
@@ -75,11 +76,7 @@ export const CategoryProvider: React.FC<CategoryProviderProps> = ({
       if (!category) return;
 
       const updatedCategory: Category = {
-        id: category.id,
-        name: category.name,
-        parentId: category.parentId,
-        createdAt: category.createdAt,
-        updatedAt: category.updatedAt,
+        ...category,
         ...updates,
         updatedAt: Date.now(),
       };

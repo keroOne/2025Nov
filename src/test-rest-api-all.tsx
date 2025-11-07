@@ -66,13 +66,15 @@ export const TestRestApiAll: React.FC = () => {
     try {
       const newTodo: Todo = {
         id: '',
-        text: `テストTodo ${Date.now()}`,
+        categoryId: '',
+        title: `テストTodo ${Date.now()}`,
+        content: '',
         completed: false,
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
       await adapter.saveTodo(newTodo);
-      addMessage(`Todo作成成功: "${newTodo.text}" (ID: ${newTodo.id})`);
+      addMessage(`Todo作成成功: "${newTodo.title}" (ID: ${newTodo.id})`);
       setTestTodoId(newTodo.id);
       // 一覧を更新（ローディング状態を変更しない）
       try {
@@ -102,7 +104,7 @@ export const TestRestApiAll: React.FC = () => {
     try {
       const todo = await adapter.getTodoById(testTodoId);
       if (todo) {
-        addMessage(`単一Todo取得成功: "${todo.text}"`);
+        addMessage(`単一Todo取得成功: "${todo.title}"`);
         console.log('取得したTodo:', todo);
       } else {
         addMessage('Todoが見つかりませんでした', true);
@@ -133,7 +135,7 @@ export const TestRestApiAll: React.FC = () => {
         return;
       }
       todo.completed = !todo.completed;
-      todo.text = `${todo.text} (更新済み)`;
+      todo.title = `${todo.title} (更新済み)`;
       await adapter.saveTodo(todo);
       addMessage(`Todo更新成功: completed=${todo.completed}`);
       // 一覧を更新（ローディング状態を変更しない）
@@ -276,7 +278,8 @@ export const TestRestApiAll: React.FC = () => {
                 }}
               >
                 <div><strong>ID:</strong> {todo.id}</div>
-                <div><strong>Text:</strong> {todo.text}</div>
+                <div><strong>Title:</strong> {todo.title}</div>
+                <div><strong>Content:</strong> {todo.content || '(なし)'}</div>
                 <div><strong>Completed:</strong> {todo.completed ? '✅' : '❌'}</div>
                 <div><strong>Created:</strong> {new Date(todo.createdAt).toLocaleString('ja-JP')}</div>
                 <div><strong>Updated:</strong> {new Date(todo.updatedAt).toLocaleString('ja-JP')}</div>

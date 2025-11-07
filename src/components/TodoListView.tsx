@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Button, Checkbox, Input, Body1, Spinner } from '@fluentui/react-components';
-import { AddRegular, DeleteRegular } from '@fluentui/react-icons';
+import { Card, Button, Checkbox, Input, Body1, Spinner, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem } from '@fluentui/react-components';
+import { AddRegular, DeleteRegular, DocumentRegular, DocumentTextRegular } from '@fluentui/react-icons';
 import { useTodo } from '../contexts/TodoContext';
 import { useCategory } from '../contexts/CategoryContext';
 import type { Todo } from '../types/todo';
@@ -24,11 +24,13 @@ const findCategoryById = (
 };
 
 export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, selectedTodoId }) => {
-  const { todos, filteredTodos, addTodo, updateTodo, deleteTodo, toggleTodo, selectedCategoryId } = useTodo();
+  const { filteredTodos, addTodo, deleteTodo, toggleTodo, selectedCategoryId } = useTodo();
   const { categories, loading: categoriesLoading } = useCategory();
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ x: number; y: number } | null>(null);
 
   const selectedCategory = selectedCategoryId && categories.length > 0
     ? findCategoryById(categories, selectedCategoryId)
@@ -73,6 +75,19 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!selectedCategoryId) return;
+    setContextMenuPosition({ x: e.clientX, y: e.clientY });
+    setContextMenuOpen(true);
+  };
+
+  const handleAddFromMenu = () => {
+    setContextMenuOpen(false);
+    setIsAdding(true);
+  };
+
   if (categoriesLoading) {
     return (
       <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
@@ -92,8 +107,14 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
 
   return (
     <div style={{ padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#323130' }}>
+      <div
+        style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+        onContextMenu={handleContextMenu}
+      >
+        <h3 
+          style={{ margin: 0, fontSize: '18px', fontWeight: '600', color: '#323130', cursor: 'context-menu' }}
+          onContextMenu={handleContextMenu}
+        >
           {selectedCategory?.name || 'Todo'}
         </h3>
         <Button
@@ -106,6 +127,36 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
           Todo追加
         </Button>
       </div>
+      {contextMenuOpen && contextMenuPosition && (
+        <Menu open={contextMenuOpen} onOpenChange={(_, data) => setContextMenuOpen(data.open)}>
+          <MenuTrigger disableButtonEnhancement>
+            <div 
+              style={{ 
+                position: 'fixed', 
+                left: contextMenuPosition.x, 
+                top: contextMenuPosition.y, 
+                width: 0, 
+                height: 0,
+                pointerEvents: 'none',
+                zIndex: -1
+              }} 
+            />
+          </MenuTrigger>
+          <MenuPopover>
+            <MenuList>
+              <MenuItem
+                icon={<DocumentRegular />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddFromMenu();
+                }}
+              >
+                追加...
+              </MenuItem>
+            </MenuList>
+          </MenuPopover>
+        </Menu>
+      )}
       {isAdding && (
         <Card style={{ marginBottom: '16px', padding: '16px', backgroundColor: '#faf9f8', border: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -140,9 +191,15 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
           </div>
         </Card>
       )}
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div 
+        style={{ flex: 1, overflow: 'auto' }}
+        onContextMenu={handleContextMenu}
+      >
         {filteredTodos.length === 0 ? (
-          <div style={{ padding: '24px', textAlign: 'center', color: '#605e5c', fontSize: '14px' }}>
+          <div 
+            style={{ padding: '24px', textAlign: 'center', color: '#605e5c', fontSize: '14px', minHeight: '200px' }}
+            onContextMenu={handleContextMenu}
+          >
             Todoがありません
           </div>
         ) : (
@@ -179,7 +236,16 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
                     onChange={() => toggleTodo(todo.id)}
                     onClick={(e) => e.stopPropagation()}
                   />
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {todo.content && todo.content.trim() ? (
+                      <span style={{ fontSize: '16px', color: todo.completed ? '#605e5c' : '#0078d4', flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}>
+                        <DocumentTextRegular />
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '16px', color: todo.completed ? '#605e5c' : '#0078d4', flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}>
+                        <DocumentRegular />
+                      </span>
+                    )}
                     <Body1
                       style={{
                         textDecoration: todo.completed ? 'line-through' : 'none',

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, Input, Button, Checkbox, Body1, Spinner } from '@fluentui/react-components';
+import { Card, Input, Button, Checkbox, Spinner, Textarea } from '@fluentui/react-components';
 import { SaveRegular, DismissRegular } from '@fluentui/react-icons';
 import { useTodo } from '../contexts/TodoContext';
 import type { Todo } from '../types/todo';
@@ -94,17 +94,16 @@ export const TodoDetailView: React.FC<TodoDetailViewProps> = ({ todo }) => {
               size="large"
             />
             <div style={{ minHeight: '200px' }}>
-              <Input
+              <Textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="内容"
-                multiline
                 rows={10}
               />
             </div>
             <Checkbox
               checked={completed}
-              onChange={(e, data) => setCompleted(data.checked || false)}
+              onChange={(_, data) => setCompleted(data.checked === true)}
               label="完了"
             />
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>

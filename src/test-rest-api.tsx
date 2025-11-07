@@ -108,7 +108,9 @@ export const TestRestApi: React.FC = () => {
                   <strong>ID:</strong> {todo.id}
                 </div>
                 <div>
-                  <strong>Text:</strong> {todo.text}
+                  <strong>Title:</strong> {todo.title}
+                  <br />
+                  <strong>Content:</strong> {todo.content || '(なし)'}
                 </div>
                 <div>
                   <strong>Completed:</strong> {todo.completed ? '✅' : '❌'}

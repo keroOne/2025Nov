@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import type { ReactNode } from 'react';
 import type { Todo, TodoFilter } from '../types/todo';
 import type { IStorage } from '../storage/IStorage';
 import { RestApiAdapter } from '../storage/RestApiAdapter';
