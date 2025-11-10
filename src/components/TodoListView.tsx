@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, Button, Checkbox, Body1, Spinner, Menu, MenuTrigger, MenuPopover, MenuList, MenuItem } from '@fluentui/react-components';
 import { AddRegular, DeleteRegular, DocumentRegular, DocumentTextRegular, EditRegular, EyeRegular } from '@fluentui/react-icons';
 import { useTodo } from '../contexts/TodoContext';
@@ -9,6 +9,7 @@ import type { Todo } from '../types/todo';
 interface TodoListViewProps {
   onSelectTodo: (todo: Todo | null) => void;
   selectedTodoId: string | null;
+  sortBy?: 'updatedAt' | 'createdAt' | 'publishedAt';
 }
 
 // カテゴリをIDで検索（階層構造内）
@@ -24,9 +25,21 @@ const findCategoryById = (
   return null;
 };
 
-export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, selectedTodoId }) => {
+export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, selectedTodoId, sortBy = 'createdAt' }) => {
   const { filteredTodos, addTodo, deleteTodo, toggleTodo, selectedCategoryId } = useTodo();
   const { categories, loading: categoriesLoading } = useCategory();
+
+  // ソートされたTodoリスト
+  const sortedTodos = useMemo(() => {
+    const todos = [...filteredTodos];
+    if (sortBy === 'updatedAt') {
+      return todos.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    } else if (sortBy === 'publishedAt') {
+      return todos.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
+    } else {
+      return todos.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+  }, [filteredTodos, sortBy]);
   const [dialogMode, setDialogMode] = useState<'view' | 'add' | 'edit' | 'preview' | null>(null);
   const [dialogTodoId, setDialogTodoId] = useState<string | null>(null);
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
@@ -244,7 +257,7 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
         style={{ flex: 1, overflow: 'auto' }}
         onContextMenu={handleContextMenuEmpty}
       >
-        {filteredTodos.length === 0 ? (
+        {sortedTodos.length === 0 ? (
           <div 
             style={{ padding: '24px', textAlign: 'center', color: '#605e5c', fontSize: '14px', minHeight: '200px' }}
             onContextMenu={handleContextMenuEmpty}
@@ -253,7 +266,7 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {filteredTodos.map((todo) => (
+            {sortedTodos.map((todo) => (
               <Card
                 key={todo.id}
                 style={{
@@ -342,6 +355,24 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
                         minute: '2-digit' 
                       }) : '-'}
                     </Body1>
+                    {sortBy === 'updatedAt' && (
+                      <Body1
+                        style={{
+                          fontSize: '12px',
+                          color: '#605e5c',
+                          minWidth: '140px',
+                          textAlign: 'right',
+                        }}
+                      >
+                        {todo.updatedAt ? new Date(todo.updatedAt).toLocaleString('ja-JP', { 
+                          year: 'numeric', 
+                          month: '2-digit', 
+                          day: '2-digit', 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        }) : '-'}
+                      </Body1>
+                    )}
                   </div>
                   <div style={{ display: 'flex', gap: '4px', opacity: 0 }} onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }}>
                     <Button
