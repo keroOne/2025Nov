@@ -36,3 +36,19 @@ body {
 .tox .tox-edit-area__iframe {
   background-color: #ffffff;
 }
+
+/* カレンダーポップアップの位置調整 */
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* カレンダーポップアップが画面内に収まるように調整 */
+input[type="datetime-local"] {
+  position: relative;
+}
+
+/* ダイアログ内のカレンダーコントロールの位置調整 */
+input[type="datetime-local"]:focus {
+  outline: 2px solid #0078d4;
+  outline-offset: 2px;
+}

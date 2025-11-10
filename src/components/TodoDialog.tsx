@@ -26,6 +26,8 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
   const [viewingTodoId, setViewingTodoId] = useState<string | null>(null);
   const [previewContent, setPreviewContent] = useState('');
 
+  // PCのユーザー名の初期値はブランク（本番ではログインユーザー名から取得）
+
   // 日時をdatetime-local形式に変換
   const dateTimeToLocalString = (timestamp?: number): string => {
     if (!timestamp) return '';
@@ -72,7 +74,7 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
 
   // Todoが変更されたときに状態を更新
   useEffect(() => {
-    if (mode === 'view' || mode === 'edit' || mode === 'preview') {
+    if (mode === 'view' || mode === 'edit') {
       const id = viewingTodoId || todoId;
       if (id) {
         setViewingTodoId(id);
@@ -85,12 +87,15 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
           setPublishedAt(dateTimeToLocalString(todo.publishedAt));
         }
       }
+    } else if (mode === 'preview') {
+      // プレビューモードでは、編集内容を保持するため、状態を更新しない
+      // （編集画面で入力した値がそのまま表示される）
     } else if (mode === 'add') {
       const now = new Date();
       setTitle('');
       setContent('');
       setCompleted(false);
-      setAuthor('');
+      setAuthor(''); // 初期値はブランク（本番ではログインユーザー名から取得）
       setPublishedAt(dateTimeToLocalString(now.getTime()));
       setViewingTodoId(null);
     }
@@ -216,7 +221,7 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
         onClose();
       }
     }}>
-      <DialogSurface style={{ minWidth: '600px', maxWidth: '800px' }}>
+      <DialogSurface style={{ minWidth: '600px', maxWidth: '800px', maxHeight: '90vh', overflow: 'auto', position: 'relative' }}>
         <DialogTitle>
           {mode === 'add' ? 'Todo追加' : mode === 'edit' ? 'Todo編集' : mode === 'preview' ? 'Todoプレビュー' : 'Todo表示'}
         </DialogTitle>
@@ -304,8 +309,8 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                     placeholder="内容を入力..."
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: '1 1 200px', minWidth: '200px' }}>
                     <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>掲載者</Body1>
                     <Input
                       value={author}
@@ -314,12 +319,27 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                       size="medium"
                     />
                   </div>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: '1 1 200px', minWidth: '200px', position: 'relative', zIndex: 1 }}>
                     <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>公開日時</Body1>
                     <input
                       type="datetime-local"
                       value={publishedAt}
                       onChange={(e) => setPublishedAt(e.target.value)}
+                      onFocus={(e) => {
+                        // カレンダーポップアップが画面内に収まるように位置を調整
+                        const rect = e.target.getBoundingClientRect();
+                        const windowHeight = window.innerHeight;
+                        const popupHeight = 300; // カレンダーポップアップの推定高さ
+                        
+                        // 画面下部にはみ出る場合は、上方向に表示
+                        if (rect.bottom + popupHeight > windowHeight) {
+                          const scrollTop = window.scrollY || document.documentElement.scrollTop;
+                          const targetTop = rect.top + scrollTop - popupHeight - 10;
+                          if (targetTop > 0) {
+                            window.scrollTo({ top: targetTop, behavior: 'smooth' });
+                          }
+                        }
+                      }}
                       style={{
                         width: '100%',
                         padding: '8px 12px',
@@ -327,6 +347,7 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                         border: '1px solid #edebe9',
                         borderRadius: '4px',
                         fontFamily: 'inherit',
+                        boxSizing: 'border-box',
                       }}
                     />
                   </div>
