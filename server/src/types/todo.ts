@@ -5,6 +5,8 @@ export interface Todo {
   title: string;
   content: string;
   completed: boolean;
+  author?: string;
+  publishedAt?: number; // Unix timestamp (ms)
   createdAt: number; // Unix timestamp (ms)
   updatedAt: number; // Unix timestamp (ms)
 }
@@ -14,6 +16,8 @@ export interface CreateTodoRequest {
   categoryId: string;
   title: string;
   content: string;
+  author?: string;
+  publishedAt?: number; // Unix timestamp (ms)
 }
 
 export interface UpdateTodoRequest {
@@ -21,4 +25,6 @@ export interface UpdateTodoRequest {
   title?: string;
   content?: string;
   completed?: boolean;
+  author?: string;
+  publishedAt?: number; // Unix timestamp (ms)
 }

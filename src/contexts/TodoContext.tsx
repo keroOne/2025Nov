@@ -9,7 +9,7 @@ interface TodoContextType {
   filter: TodoFilter;
   filteredTodos: Todo[];
   selectedCategoryId: string | null;
-  addTodo: (categoryId: string, title: string, content: string) => Promise<void>;
+  addTodo: (categoryId: string, title: string, content: string, author?: string, publishedAt?: number) => Promise<void>;
   updateTodo: (id: string, updates: Partial<Todo>) => Promise<void>;
   deleteTodo: (id: string) => Promise<void>;
   toggleTodo: (id: string) => Promise<void>;
@@ -65,14 +65,16 @@ export const TodoProvider: React.FC<TodoProviderProps> = ({
   });
 
   // Todoを追加
-  const addTodo = useCallback(async (categoryId: string, title: string, content: string) => {
-    console.log('addTodo called:', { categoryId, title, content });
+  const addTodo = useCallback(async (categoryId: string, title: string, content: string, author?: string, publishedAt?: number) => {
+    console.log('addTodo called:', { categoryId, title, content, author, publishedAt });
     const newTodo: Todo = {
       id: '',
       categoryId,
       title: title.trim(),
       content: content.trim(),
       completed: false,
+      author,
+      publishedAt,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

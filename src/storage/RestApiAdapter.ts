@@ -15,27 +15,37 @@ export class RestApiAdapter implements IStorage {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
     
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    });
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: { message: `HTTP ${response.status}: ${response.statusText}` },
-      }));
-      throw new Error(error.error?.message || 'Request failed');
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({
+          error: { message: `HTTP ${response.status}: ${response.statusText}` },
+        }));
+        throw new Error(error.error?.message || 'Request failed');
+      }
+
+      // 204 No Content の場合は空のレスポンス
+      if (response.status === 204) {
+        return undefined as T;
+      }
+
+      return response.json();
+    } catch (error: any) {
+      // ネットワークエラー（サーバーが起動していない、CORSエラーなど）の場合
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        console.error(`Failed to connect to API server at ${url}`);
+        console.error('Please make sure the server is running on http://localhost:3001');
+        throw new Error(`サーバーに接続できません。サーバーが起動しているか確認してください。 (${url})`);
+      }
+      throw error;
     }
-
-    // 204 No Content の場合は空のレスポンス
-    if (response.status === 204) {
-      return undefined as T;
-    }
-
-    return response.json();
   }
 
   /**
@@ -72,41 +82,49 @@ export class RestApiAdapter implements IStorage {
   /**
    * Todoを保存（新規作成または更新）
    */
-  async saveTodo(todo: Todo): Promise<void> {
-    try {
-      // 新規作成の場合（idがない、または空文字列）
-      if (!todo.id || todo.id.trim() === '') {
-        const createdTodo = await this.request<Todo>('/todos', {
-          method: 'POST',
-          body: JSON.stringify({
-            categoryId: todo.categoryId,
-            title: todo.title,
-            content: todo.content,
-          }),
-        });
-        // 作成されたTodoのIDを元のTodoオブジェクトに反映
-        todo.id = createdTodo.id;
-        todo.createdAt = createdTodo.createdAt;
-        todo.updatedAt = createdTodo.updatedAt;
-      } else {
-        // 更新
-        const updatedTodo = await this.request<Todo>(`/todos/${todo.id}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            categoryId: todo.categoryId,
-            title: todo.title,
-            content: todo.content,
-            completed: todo.completed,
-          }),
-        });
-        // 更新されたTodoの情報を反映
-        todo.updatedAt = updatedTodo.updatedAt;
+    async saveTodo(todo: Todo): Promise<void> {
+      try {
+        // 新規作成の場合（idがない、または空文字列）
+        if (!todo.id || todo.id.trim() === '') {
+          const createdTodo = await this.request<Todo>('/todos', {
+            method: 'POST',
+            body: JSON.stringify({
+              categoryId: todo.categoryId,
+              title: todo.title,
+              content: todo.content,
+              author: todo.author,
+              publishedAt: todo.publishedAt,
+            }),
+          });
+          // 作成されたTodoのIDを元のTodoオブジェクトに反映
+          todo.id = createdTodo.id;
+          todo.createdAt = createdTodo.createdAt;
+          todo.updatedAt = createdTodo.updatedAt;
+          todo.author = createdTodo.author;
+          todo.publishedAt = createdTodo.publishedAt;
+        } else {
+          // 更新
+          const updatedTodo = await this.request<Todo>(`/todos/${todo.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              categoryId: todo.categoryId,
+              title: todo.title,
+              content: todo.content,
+              completed: todo.completed,
+              author: todo.author,
+              publishedAt: todo.publishedAt,
+            }),
+          });
+          // 更新されたTodoの情報を反映
+          todo.updatedAt = updatedTodo.updatedAt;
+          todo.author = updatedTodo.author;
+          todo.publishedAt = updatedTodo.publishedAt;
+        }
+      } catch (error) {
+        console.error('Failed to save todo:', error);
+        throw error;
       }
-    } catch (error) {
-      console.error('Failed to save todo:', error);
-      throw error;
     }
-  }
 
   /**
    * Todoを削除

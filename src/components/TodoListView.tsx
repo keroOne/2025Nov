@@ -44,13 +44,13 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
   };
 
   // 追加処理
-  const handleAdd = async (title: string, content: string) => {
+  const handleAdd = async (title: string, content: string, author?: string, publishedAt?: number) => {
     if (!selectedCategoryId) {
       alert('カテゴリを選択してください');
       return;
     }
     try {
-      await addTodo(selectedCategoryId, title, content);
+      await addTodo(selectedCategoryId, title, content, author, publishedAt);
     } catch (error) {
       console.error('Failed to add todo:', error);
       throw error;
@@ -252,18 +252,20 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
             Todoがありません
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {filteredTodos.map((todo) => (
               <Card
                 key={todo.id}
                 style={{
-                  padding: '12px 16px',
+                  padding: '8px 16px',
                   cursor: 'pointer',
                   backgroundColor: selectedTodoId === todo.id ? '#e1f5fe' : '#ffffff',
                   border: selectedTodoId === todo.id ? '1px solid #0078d4' : '1px solid #edebe9',
                   borderRadius: '4px',
                   boxShadow: selectedTodoId === todo.id ? '0 2px 4px rgba(0,120,212,0.2)' : 'none',
                   transition: 'all 0.15s ease',
+                  lineHeight: '1.5',
+                  minHeight: '21px', // 14px * 1.5 = 21px
                 }}
                 onClick={() => onSelectTodo(todo)}
                 onDoubleClick={() => handleDoubleClick(todo.id)}
@@ -281,13 +283,13 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
                   }
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%' }}>
                   <Checkbox
                     checked={todo.completed}
                     onChange={() => toggleTodo(todo.id)}
                     onClick={(e) => e.stopPropagation()}
                   />
-                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                     {todo.content && todo.content.trim() ? (
                       <span style={{ fontSize: '16px', color: todo.completed ? '#605e5c' : '#0078d4', flexShrink: 0, display: 'inline-flex', alignItems: 'center' }}>
                         <DocumentTextRegular />
@@ -303,9 +305,42 @@ export const TodoListView: React.FC<TodoListViewProps> = ({ onSelectTodo, select
                         color: todo.completed ? '#605e5c' : '#323130',
                         fontWeight: selectedTodoId === todo.id ? '600' : '400',
                         fontSize: '14px',
+                        flex: 1,
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       {todo.title}
+                    </Body1>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                    <Body1
+                      style={{
+                        fontSize: '12px',
+                        color: '#605e5c',
+                        minWidth: '80px',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {todo.author || '-'}
+                    </Body1>
+                    <Body1
+                      style={{
+                        fontSize: '12px',
+                        color: '#605e5c',
+                        minWidth: '140px',
+                        textAlign: 'right',
+                      }}
+                    >
+                      {todo.publishedAt ? new Date(todo.publishedAt).toLocaleString('ja-JP', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                      }) : '-'}
                     </Body1>
                   </div>
                   <div style={{ display: 'flex', gap: '4px', opacity: 0 }} onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }} onMouseLeave={(e) => { e.currentTarget.style.opacity = '0'; }}>

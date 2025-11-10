@@ -10,7 +10,7 @@ interface TodoDialogProps {
   onClose: () => void;
   onModeChange?: (mode: 'view' | 'add' | 'edit' | 'preview' | null) => void;
   onTodoChange?: (todoId: string | null) => void;
-  onAdd?: (title: string, content: string) => Promise<void>;
+  onAdd?: (title: string, content: string, author?: string, publishedAt?: number) => Promise<void>;
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -20,13 +20,33 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [completed, setCompleted] = useState(false);
+  const [author, setAuthor] = useState('');
+  const [publishedAt, setPublishedAt] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [viewingTodoId, setViewingTodoId] = useState<string | null>(null);
   const [previewContent, setPreviewContent] = useState('');
 
+  // 日時をdatetime-local形式に変換
+  const dateTimeToLocalString = (timestamp?: number): string => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // datetime-local形式をタイムスタンプに変換
+  const localStringToTimestamp = (localString: string): number | undefined => {
+    if (!localString) return undefined;
+    return new Date(localString).getTime();
+  };
+
   // 現在表示中のTodoを取得
   const currentTodo = useMemo(() => {
-    if (mode === 'view' || mode === 'edit') {
+    if (mode === 'view' || mode === 'edit' || mode === 'preview') {
       const id = viewingTodoId || todoId;
       return filteredTodos.find(t => t.id === id) || null;
     }
@@ -61,12 +81,17 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
           setTitle(todo.title);
           setContent(todo.content);
           setCompleted(todo.completed);
+          setAuthor(todo.author || '');
+          setPublishedAt(dateTimeToLocalString(todo.publishedAt));
         }
       }
     } else if (mode === 'add') {
+      const now = new Date();
       setTitle('');
       setContent('');
       setCompleted(false);
+      setAuthor('');
+      setPublishedAt(dateTimeToLocalString(now.getTime()));
       setViewingTodoId(null);
     }
   }, [mode, todoId, filteredTodos]);
@@ -83,11 +108,7 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
   }, [mode, todoId]);
 
   // プレビューモードに遷移するときに、現在の編集内容をプレビュー用に保存
-  useEffect(() => {
-    if (mode === 'preview') {
-      setPreviewContent(content);
-    }
-  }, [mode, content]);
+  // このuseEffectは削除し、handlePreview関数内で直接設定する
 
   // 前のTodoに移動
   const handlePrev = () => {
@@ -119,7 +140,7 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
       if (!onAdd) return;
       setIsSaving(true);
       try {
-        await onAdd(title.trim(), content.trim());
+        await onAdd(title.trim(), content.trim(), author.trim() || undefined, localStringToTimestamp(publishedAt));
         onClose();
       } catch (error) {
         console.error('Failed to add todo:', error);
@@ -134,10 +155,14 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
       }
       setIsSaving(true);
       try {
+        // previewContentが空の場合はcontentを使用（フォールバック）
+        const contentToSave = previewContent.trim() || content.trim();
         await updateTodo(currentTodo.id, {
           title: title.trim(),
-          content: previewContent.trim(),
+          content: contentToSave,
           completed,
+          author: author.trim() || undefined,
+          publishedAt: localStringToTimestamp(publishedAt),
         });
         onClose();
       } catch (error) {
@@ -155,6 +180,8 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
       alert('タイトルを入力してください');
       return;
     }
+    // 現在の編集内容をプレビュー用に保存
+    setPreviewContent(content);
     if (onModeChange) {
       onModeChange('preview');
     }
@@ -242,6 +269,20 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                     dangerouslySetInnerHTML={{ __html: currentTodo.content || '(内容なし)' }}
                   />
                 </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>掲載者</Body1>
+                    <Body1 style={{ fontSize: '14px', color: '#323130' }}>
+                      {currentTodo.author || '-'}
+                    </Body1>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>公開日時</Body1>
+                    <Body1 style={{ fontSize: '14px', color: '#323130' }}>
+                      {currentTodo.publishedAt ? new Date(currentTodo.publishedAt).toLocaleString('ja-JP') : '-'}
+                    </Body1>
+                  </div>
+                </div>
                 <div>
                   <Checkbox checked={currentTodo.completed} label="完了" disabled />
                 </div>
@@ -262,6 +303,33 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                     onChange={setContent}
                     placeholder="内容を入力..."
                   />
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>掲載者</Body1>
+                    <Input
+                      value={author}
+                      onChange={(e) => setAuthor(e.target.value)}
+                      placeholder="掲載者名"
+                      size="medium"
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>公開日時</Body1>
+                    <input
+                      type="datetime-local"
+                      value={publishedAt}
+                      onChange={(e) => setPublishedAt(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        border: '1px solid #edebe9',
+                        borderRadius: '4px',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                  </div>
                 </div>
                 <Checkbox
                   checked={completed}
@@ -290,6 +358,20 @@ export const TodoDialog: React.FC<TodoDialogProps> = ({ mode, todoId, onClose, o
                     }}
                     dangerouslySetInnerHTML={{ __html: previewContent || '(内容なし)' }}
                   />
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>掲載者</Body1>
+                    <Body1 style={{ fontSize: '14px', color: '#323130' }}>
+                      {author || '-'}
+                    </Body1>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <Body1 style={{ fontSize: '12px', color: '#605e5c', marginBottom: '4px' }}>公開日時</Body1>
+                    <Body1 style={{ fontSize: '14px', color: '#323130' }}>
+                      {publishedAt ? new Date(localStringToTimestamp(publishedAt)!).toLocaleString('ja-JP') : '-'}
+                    </Body1>
+                  </div>
                 </div>
                 <div>
                   <Checkbox checked={completed} label="完了" disabled />

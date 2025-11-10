@@ -55,7 +55,7 @@ export async function getTodoById(req: Request, res: Response) {
  */
 export async function createTodo(req: Request, res: Response) {
   try {
-    const { categoryId, title, content } = req.body as CreateTodoRequest;
+    const { categoryId, title, content, author, publishedAt } = req.body as CreateTodoRequest;
     
     if (!categoryId || typeof categoryId !== 'string') {
       return res.status(400).json({
@@ -85,6 +85,8 @@ export async function createTodo(req: Request, res: Response) {
         title: title.trim(),
         content: (content || '').trim(),
         completed: false,
+        author: author ? author.trim() : null,
+        publishedAt: publishedAt ? new Date(publishedAt) : null,
       },
     });
     
@@ -101,9 +103,16 @@ export async function createTodo(req: Request, res: Response) {
 export async function updateTodo(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { categoryId, title, content, completed } = req.body as UpdateTodoRequest;
+    const { categoryId, title, content, completed, author, publishedAt } = req.body as UpdateTodoRequest;
     
-    const updateData: { categoryId?: string; title?: string; content?: string; completed?: boolean } = {};
+    const updateData: { 
+      categoryId?: string; 
+      title?: string; 
+      content?: string; 
+      completed?: boolean;
+      author?: string | null;
+      publishedAt?: Date | null;
+    } = {};
     
     if (categoryId !== undefined) {
       if (typeof categoryId !== 'string') {
@@ -148,6 +157,24 @@ export async function updateTodo(req: Request, res: Response) {
         });
       }
       updateData.completed = completed;
+    }
+    
+    if (author !== undefined) {
+      if (author !== null && typeof author !== 'string') {
+        return res.status(400).json({
+          error: { message: 'Author must be a string or null' },
+        });
+      }
+      updateData.author = author ? author.trim() : null;
+    }
+    
+    if (publishedAt !== undefined) {
+      if (publishedAt !== null && typeof publishedAt !== 'number') {
+        return res.status(400).json({
+          error: { message: 'PublishedAt must be a number (Unix timestamp) or null' },
+        });
+      }
+      updateData.publishedAt = publishedAt ? new Date(publishedAt) : null;
     }
     
     if (Object.keys(updateData).length === 0) {

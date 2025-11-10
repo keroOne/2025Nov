@@ -4,6 +4,8 @@ export interface Todo {
   title: string;
   content: string;
   completed: boolean;
+  author?: string;
+  publishedAt?: number;
   createdAt: number;
   updatedAt: number;
 }

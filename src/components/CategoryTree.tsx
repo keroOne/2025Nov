@@ -125,12 +125,14 @@ const CategoryTreeItem: React.FC<CategoryTreeItemProps> = ({ category, level, ex
           display: 'flex',
           alignItems: 'center',
           gap: '4px',
-          padding: '8px 12px',
+          padding: '6px 12px',
           backgroundColor: isSelected ? '#e1f5fe' : 'transparent',
           cursor: 'pointer',
           marginLeft: `${level * 20}px`,
           borderRadius: '4px',
           transition: 'background-color 0.15s ease',
+          lineHeight: '1.5',
+          minHeight: '21px', // 14px * 1.5 = 21px
         }}
         onClick={handleSelect}
         onDoubleClick={handleDoubleClick}

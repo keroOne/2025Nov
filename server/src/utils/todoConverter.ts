@@ -14,6 +14,8 @@ export function prismaTodoToApiTodo(prismaTodo: PrismaTodo): Todo {
     title: prismaTodo.title,
     content: prismaTodo.content,
     completed: prismaTodo.completed,
+    author: prismaTodo.author || undefined,
+    publishedAt: prismaTodo.publishedAt ? prismaTodo.publishedAt.getTime() : undefined,
     createdAt: prismaTodo.createdAt.getTime(),
     updatedAt: prismaTodo.updatedAt.getTime(),
   };

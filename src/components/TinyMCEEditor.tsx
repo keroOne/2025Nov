@@ -20,6 +20,7 @@ export const TinyMCEEditor: React.FC<TinyMCEEditorProps> = ({ value, onChange, p
       border: '1px solid #edebe9',
       borderRadius: '4px',
       backgroundColor: '#ffffff',
+      height: '100%',
       minHeight: '300px',
     }}>
       <Editor
